@@ -230,8 +230,7 @@
       <ol>
         <li><strong>Browse</strong> - Search or filter to find text that needs translation or has errors</li>
         <li><strong>Fix</strong> - Click "Fix" on any row to suggest a correction</li>
-        <li><strong>Submit</strong> - When done, click "Submit Corrections" to download your fixes as JSON</li>
-        <li><strong>Send</strong> - <a href="https://github.com/rainbowbananas/life-pop-translations/issues/new?template=translation-fix.yml" target="_blank">Open an Issue</a> and paste your JSON</li>
+        <li><strong>Submit</strong> - Click "Submit Corrections" to save your fixes</li>
       </ol>
     </div>
 
@@ -268,6 +267,10 @@
           <option value="translated">Already translated</option>
           <option value="edited">My corrections</option>
         </select>
+      </div>
+      <div class="control-group" style="margin-left:auto;">
+        <label>&nbsp;</label>
+        <button id="submitBtn" onclick="submitCorrections()">Submit Corrections (<span id="fixCount">0</span>)</button>
       </div>
     </div>
 
@@ -463,6 +466,7 @@
     function updatePendingBanner() {
       const count = Object.keys(corrections).length;
       document.getElementById('pendingNum').textContent = count;
+      document.getElementById('fixCount').textContent = count;
       document.getElementById('pendingBanner').classList.toggle('active', count > 0);
     }
 
@@ -479,7 +483,7 @@
     function submitCorrections() {
       const count = Object.keys(corrections).length;
       if (count === 0) {
-        alert('No corrections to submit. Click "Fix" on any row to add corrections.');
+        alert('No corrections to submit yet. Click "Fix" on any row to add a translation.');
         return;
       }
 
@@ -502,15 +506,22 @@
         }
       };
 
-      const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'translation-corrections-' + Date.now() + '.json';
-      a.click();
-      URL.revokeObjectURL(url);
+      // Open GitHub Issue with pre-filled JSON
+      const json = JSON.stringify(output, null, 2);
+      const locales = Object.keys(byLocale).join(', ');
+      const title = encodeURIComponent('[Translation] ' + count + ' fixes for ' + locales);
+      const body = encodeURIComponent('```json\n' + json + '\n```');
+      const issueUrl = 'https://github.com/rainbowbananas/life-pop-translations/issues/new?title=' + title + '&body=' + body;
+      window.open(issueUrl, '_blank');
 
-      alert('Downloaded! Now open a GitHub Issue (link in instructions above) and paste the JSON contents.');
+      // Ask to clear after submit
+      if (confirm('Opening GitHub to submit your corrections.\n\nClear your saved fixes now?')) {
+        corrections = {};
+        localStorage.removeItem('lifepop-corrections');
+        updatePendingBanner();
+        updateStats();
+        renderTable();
+      }
     }
 
     // Event listeners
