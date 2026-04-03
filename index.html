@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Life Pop Translation Portal</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --success: #3fb950;
+      --warning: #d29922;
+      --danger: #f85149;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    .container { max-width: 1400px; margin: 0 auto; }
+    h1 { margin: 0 0 8px; }
+    .subtitle { color: var(--text-muted); margin-bottom: 24px; }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      padding: 16px;
+      background: var(--surface);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      align-items: flex-end;
+    }
+    .control-group { display: flex; flex-direction: column; gap: 4px; }
+    .control-group label { font-size: 12px; color: var(--text-muted); }
+    input, select, button {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--accent); }
+    input[type="text"] { min-width: 250px; }
+    button {
+      background: var(--accent);
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    button:hover { opacity: 0.9; }
+    button.secondary { background: var(--surface); border: 1px solid var(--border); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .stats {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .stat {
+      background: var(--surface);
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .stat-value { font-size: 24px; font-weight: 600; }
+    .stat-label { font-size: 12px; color: var(--text-muted); }
+    .stat.success .stat-value { color: var(--success); }
+    .stat.warning .stat-value { color: var(--warning); }
+    .stat.accent .stat-value { color: var(--accent); }
+
+    .help-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+    }
+    .help-box h3 { margin: 0 0 8px; font-size: 14px; }
+    .help-box ol { margin: 0; padding-left: 20px; font-size: 14px; color: var(--text-muted); }
+    .help-box a { color: var(--accent); }
+
+    .table-container {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    th {
+      background: var(--surface);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    tr:hover { background: rgba(88, 166, 255, 0.05); }
+    .cell-en { max-width: 350px; }
+    .cell-translation { max-width: 350px; }
+    .cell-en, .cell-translation { word-wrap: break-word; }
+    .missing-text { color: var(--danger); font-style: italic; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .badge.translated { background: rgba(63, 185, 80, 0.2); color: var(--success); }
+    .badge.missing { background: rgba(248, 81, 73, 0.2); color: var(--danger); }
+    .badge.edited { background: var(--accent); color: #000; }
+
+    .btn-fix {
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-fix:hover { border-color: var(--accent); color: var(--accent); }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal h2 { margin: 0 0 16px; }
+    .modal-field { margin-bottom: 16px; }
+    .modal-field label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+    .modal-field .value {
+      background: var(--bg);
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .modal textarea {
+      width: 100%;
+      min-height: 100px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 14px;
+      resize: vertical;
+    }
+    .modal textarea:focus { outline: none; border-color: var(--accent); }
+    .modal-actions { display: flex; gap: 12px; justify-content: flex-end; }
+
+    .pagination {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    .page-info { color: var(--text-muted); font-size: 14px; }
+    .page-sizes { margin-left: 16px; }
+    .page-sizes select { padding: 4px 8px; }
+
+    .pending-banner {
+      background: linear-gradient(90deg, rgba(88, 166, 255, 0.1), rgba(210, 153, 34, 0.1));
+      border: 1px solid var(--warning);
+      border-radius: 8px;
+      padding: 12px 20px;
+      margin-bottom: 20px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .pending-banner.active { display: flex; }
+    .pending-banner span { font-size: 14px; }
+    .pending-banner strong { color: var(--warning); }
+
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Life Pop Translation Portal</h1>
+    <p class="subtitle">Help translate Life Pop into your language. Browse all text, fix errors, and submit corrections.</p>
+
+    <div class="help-box">
+      <h3>How to Contribute</h3>
+      <ol>
+        <li><strong>Browse</strong> - Search or filter to find text that needs translation or has errors</li>
+        <li><strong>Fix</strong> - Click "Fix" on any row to suggest a correction</li>
+        <li><strong>Submit</strong> - When done, click "Submit Corrections" to download your fixes as JSON</li>
+        <li><strong>Send</strong> - <a href="https://github.com/rainbowbananas/life-pop-translations/issues/new?template=translation-fix.yml" target="_blank">Open an Issue</a> and paste your JSON</li>
+      </ol>
+    </div>
+
+    <div class="pending-banner" id="pendingBanner">
+      <span>You have <strong id="pendingNum">0</strong> pending corrections</span>
+      <div>
+        <button class="secondary" onclick="clearCorrections()" style="margin-right:8px;">Clear All</button>
+        <button onclick="submitCorrections()">Submit Corrections</button>
+      </div>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="controls">
+      <div class="control-group">
+        <label>Search English text</label>
+        <input type="text" id="search" placeholder="Type to search...">
+      </div>
+      <div class="control-group">
+        <label>Language</label>
+        <select id="locale">
+          <option value="es">Spanish (es)</option>
+          <option value="fr">French (fr)</option>
+          <option value="it">Italian (it)</option>
+          <option value="ja">Japanese (ja)</option>
+          <option value="pt">Portuguese (pt)</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label>Show</label>
+        <select id="status">
+          <option value="all">All strings</option>
+          <option value="missing">Missing translations</option>
+          <option value="translated">Already translated</option>
+          <option value="edited">My corrections</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="tableArea">
+      <div class="loading">Loading translations...</div>
+    </div>
+
+    <div class="pagination" id="pagination" style="display:none;">
+      <button id="prevBtn" class="secondary">← Previous</button>
+      <span class="page-info" id="pageInfo"></span>
+      <button id="nextBtn" class="secondary">Next →</button>
+      <div class="page-sizes">
+        <label>Show:</label>
+        <select id="pageSize">
+          <option value="50">50</option>
+          <option value="100" selected>100</option>
+          <option value="250">250</option>
+          <option value="500">500</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <h2>Suggest Translation</h2>
+      <div class="modal-field">
+        <label>English</label>
+        <div class="value" id="modalEnglish"></div>
+      </div>
+      <div class="modal-field">
+        <label>Current translation (<span id="modalLocale"></span>)</label>
+        <div class="value" id="modalCurrent"></div>
+      </div>
+      <div class="modal-field">
+        <label>Your suggested translation</label>
+        <textarea id="modalSuggestion" placeholder="Enter your translation..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="secondary" onclick="closeModal()">Cancel</button>
+        <button onclick="saveSuggestion()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let data = null;
+    let corrections = JSON.parse(localStorage.getItem('lifepop-corrections') || '{}');
+    let currentPage = 1;
+    let pageSize = 100;
+    let filteredEntries = [];
+    let editingKey = null;
+
+    async function init() {
+      try {
+        const res = await fetch('data/translations.json');
+        data = await res.json();
+        applyFilters();
+        updatePendingBanner();
+        document.getElementById('pagination').style.display = 'flex';
+      } catch (e) {
+        document.getElementById('tableArea').innerHTML = '<div class="loading">Error loading data. Please refresh.</div>';
+      }
+    }
+
+    function updateStats() {
+      const locale = document.getElementById('locale').value;
+      const total = data.entries.length;
+      const translated = data.entries.filter(e => e[locale + '_status'] === 'translated').length;
+      const missing = total - translated;
+      const pct = ((translated / total) * 100).toFixed(1);
+      const myFixes = Object.keys(corrections).filter(k => k.startsWith(locale + ':')).length;
+
+      document.getElementById('stats').innerHTML =
+        '<div class="stat"><div class="stat-value">' + total.toLocaleString() + '</div><div class="stat-label">Total Strings</div></div>' +
+        '<div class="stat success"><div class="stat-value">' + pct + '%</div><div class="stat-label">Translated</div></div>' +
+        '<div class="stat warning"><div class="stat-value">' + missing.toLocaleString() + '</div><div class="stat-label">Missing</div></div>' +
+        '<div class="stat accent"><div class="stat-value">' + myFixes + '</div><div class="stat-label">Your Fixes</div></div>';
+    }
+
+    function applyFilters() {
+      const search = document.getElementById('search').value.toLowerCase().trim();
+      const locale = document.getElementById('locale').value;
+      const status = document.getElementById('status').value;
+
+      filteredEntries = data.entries.filter(function(entry) {
+        if (search && entry.en.toLowerCase().indexOf(search) === -1) {
+          return false;
+        }
+        if (status === 'missing' && entry[locale + '_status'] !== 'missing') {
+          return false;
+        }
+        if (status === 'translated' && entry[locale + '_status'] !== 'translated') {
+          return false;
+        }
+        if (status === 'edited' && !corrections[locale + ':' + entry.key]) {
+          return false;
+        }
+        return true;
+      });
+
+      currentPage = 1;
+      updateStats();
+      renderTable();
+    }
+
+    function renderTable() {
+      const locale = document.getElementById('locale').value;
+      const start = (currentPage - 1) * pageSize;
+      const end = Math.min(start + pageSize, filteredEntries.length);
+      const pageEntries = filteredEntries.slice(start, end);
+
+      if (pageEntries.length === 0) {
+        document.getElementById('tableArea').innerHTML = '<div class="loading">No results found</div>';
+        document.getElementById('pageInfo').textContent = '0 results';
+        return;
+      }
+
+      let html = '<div class="table-container"><table><thead><tr>' +
+        '<th style="width:40%">English</th>' +
+        '<th style="width:40%">Translation</th>' +
+        '<th style="width:10%">Status</th>' +
+        '<th style="width:10%"></th>' +
+        '</tr></thead><tbody>';
+
+      for (let i = 0; i < pageEntries.length; i++) {
+        const entry = pageEntries[i];
+        const hasCorrection = corrections[locale + ':' + entry.key];
+        const displayTranslation = hasCorrection || entry[locale];
+        const status = entry[locale + '_status'];
+
+        html += '<tr>' +
+          '<td class="cell-en">' + escapeHtml(entry.en) + '</td>' +
+          '<td class="cell-translation">' +
+            (displayTranslation ? escapeHtml(displayTranslation) : '<span class="missing-text">(missing)</span>') +
+            (hasCorrection ? ' <span class="badge edited">edited</span>' : '') +
+          '</td>' +
+          '<td><span class="badge ' + status + '">' + status + '</span></td>' +
+          '<td><button class="btn-fix" onclick="openModal(\'' + entry.key + '\')">Fix</button></td>' +
+          '</tr>';
+      }
+
+      html += '</tbody></table></div>';
+      document.getElementById('tableArea').innerHTML = html;
+
+      const totalPages = Math.ceil(filteredEntries.length / pageSize);
+      document.getElementById('pageInfo').textContent = 'Page ' + currentPage + ' of ' + totalPages + ' (' + filteredEntries.length.toLocaleString() + ' results)';
+      document.getElementById('prevBtn').disabled = currentPage === 1;
+      document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function openModal(key) {
+      const locale = document.getElementById('locale').value;
+      const entry = data.entries.find(function(e) { return e.key === key; });
+      if (!entry) return;
+
+      editingKey = key;
+      document.getElementById('modalEnglish').textContent = entry.en;
+      document.getElementById('modalLocale').textContent = locale;
+      document.getElementById('modalCurrent').textContent = entry[locale] || '(none)';
+      document.getElementById('modalSuggestion').value = corrections[locale + ':' + key] || entry[locale] || '';
+      document.getElementById('modal').classList.add('active');
+      document.getElementById('modalSuggestion').focus();
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('active');
+      editingKey = null;
+    }
+
+    function saveSuggestion() {
+      const locale = document.getElementById('locale').value;
+      const suggestion = document.getElementById('modalSuggestion').value.trim();
+      const entry = data.entries.find(function(e) { return e.key === editingKey; });
+
+      if (suggestion && suggestion !== entry[locale]) {
+        corrections[locale + ':' + editingKey] = suggestion;
+      } else {
+        delete corrections[locale + ':' + editingKey];
+      }
+
+      localStorage.setItem('lifepop-corrections', JSON.stringify(corrections));
+      updatePendingBanner();
+      updateStats();
+      closeModal();
+      renderTable();
+    }
+
+    function updatePendingBanner() {
+      const count = Object.keys(corrections).length;
+      document.getElementById('pendingNum').textContent = count;
+      document.getElementById('pendingBanner').classList.toggle('active', count > 0);
+    }
+
+    function clearCorrections() {
+      if (confirm('Clear all ' + Object.keys(corrections).length + ' corrections?')) {
+        corrections = {};
+        localStorage.removeItem('lifepop-corrections');
+        updatePendingBanner();
+        updateStats();
+        renderTable();
+      }
+    }
+
+    function submitCorrections() {
+      const count = Object.keys(corrections).length;
+      if (count === 0) {
+        alert('No corrections to submit. Click "Fix" on any row to add corrections.');
+        return;
+      }
+
+      // Group by locale
+      const byLocale = {};
+      for (const fullKey in corrections) {
+        const parts = fullKey.split(':');
+        const locale = parts[0];
+        const key = parts.slice(1).join(':');
+        if (!byLocale[locale]) byLocale[locale] = {};
+        byLocale[locale][key] = corrections[fullKey];
+      }
+
+      const output = {
+        submittedAt: new Date().toISOString(),
+        corrections: byLocale,
+        metadata: {
+          totalCorrections: count,
+          locales: Object.keys(byLocale)
+        }
+      };
+
+      const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'translation-corrections-' + Date.now() + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+
+      alert('Downloaded! Now open a GitHub Issue (link in instructions above) and paste the JSON contents.');
+    }
+
+    // Event listeners
+    document.getElementById('search').addEventListener('input', debounce(applyFilters, 300));
+    document.getElementById('locale').addEventListener('change', applyFilters);
+    document.getElementById('status').addEventListener('change', applyFilters);
+    document.getElementById('prevBtn').addEventListener('click', function() { currentPage--; renderTable(); });
+    document.getElementById('nextBtn').addEventListener('click', function() { currentPage++; renderTable(); });
+    document.getElementById('pageSize').addEventListener('change', function() {
+      pageSize = parseInt(this.value);
+      currentPage = 1;
+      renderTable();
+    });
+    document.getElementById('modal').addEventListener('click', function(e) {
+      if (e.target === document.getElementById('modal')) closeModal();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    function debounce(fn, ms) {
+      let timeout;
+      return function() {
+        const args = arguments;
+        clearTimeout(timeout);
+        timeout = setTimeout(function() { fn.apply(null, args); }, ms);
+      };
+    }
+
+    init();
+  </script>
+</body>
+</html>

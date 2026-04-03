@@ -1,0 +1,31 @@
+name: Translation Fix
+description: Submit translation corrections
+title: "[Translation] "
+labels: ["translation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping translate Life Pop! Paste the JSON from the translation portal below.
+
+  - type: dropdown
+    id: locale
+    attributes:
+      label: Language
+      options:
+        - Spanish (es)
+        - French (fr)
+        - Italian (it)
+        - Japanese (ja)
+        - Portuguese (pt)
+    validations:
+      required: true
+
+  - type: textarea
+    id: json
+    attributes:
+      label: Corrections JSON
+      description: Paste the downloaded JSON file contents here
+      render: json
+    validations:
+      required: true
